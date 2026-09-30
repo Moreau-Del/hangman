@@ -209,4 +209,75 @@ public class HangmanGameTest {
         assertEquals(GameState.LOST, lostGame.getState());
         assertEquals(mistakesAfterLoss, lostGame.getMistakes());
     }
+
+    // ===== getMaskedWord() =====
+
+    @Test
+    void maskedWordAtStart() {
+        HangmanGame game = new HangmanGame("корова");
+
+        assertEquals("_ _ _ _ _ _", game.getMaskedWord());
+    }
+
+    @Test
+    void maskedWordAfterSeveralLetters() {
+        HangmanGame game = new HangmanGame("корова");
+
+        game.guessLetter('к');
+        game.guessLetter('о');
+        game.guessLetter('в');
+
+        assertEquals("к о _ о в _", game.getMaskedWord());
+    }
+
+    @Test
+    void maskedWordAfterFullGuess() {
+        HangmanGame game = new HangmanGame("корова");
+
+        game.guessLetter('к');
+        game.guessLetter('о');
+        game.guessLetter('р');
+        game.guessLetter('в');
+        game.guessLetter('а');
+
+        assertEquals("к о р о в а", game.getMaskedWord());
+    }
+
+    // ===== Полные игровые сценарии =====
+
+    @Test
+    void winningGameScenario() {
+        HangmanGame game = new HangmanGame("корова");
+
+        game.guessLetter('к');       // К _ _ _ _ _
+        game.guessLetter('а');       // К _ _ _ _ А
+        game.guessLetter('о');       // К О _ О _ А
+        game.guessLetter('м');       // ошибка
+        game.guessWord("собака");    // ошибка
+        game.guessLetter('в');       // К О _ О В А
+        GuessResult result = game.guessLetter('р'); // К О Р О В А → победа
+
+        assertEquals(GuessResult.WON, result);
+        assertEquals(GameState.WON, game.getState());
+        assertEquals(2, game.getMistakes());
+        assertEquals("к о р о в а", game.getMaskedWord());
+    }
+
+    @Test
+    void losingGameScenario() {
+        HangmanGame game = new HangmanGame("корова");
+
+        game.guessLetter('о');       // правильная буква
+        game.guessLetter('м');       // 1 ошибка
+        game.guessLetter('б');       // 2
+        game.guessWord("собака");    // 3
+        game.guessLetter('д');       // 4
+        game.guessWord("машина");    // 5
+        GuessResult result = game.guessLetter('е'); // 6 → поражение
+
+        assertEquals(GuessResult.LOST, result);
+        assertEquals(GameState.LOST, game.getState());
+        assertEquals(6, game.getMistakes());
+        assertEquals("_ о _ о _ _", game.getMaskedWord());
+    }
 }
