@@ -9,10 +9,10 @@ import java.util.HashSet;
  * угадать букву или слово.
  */
 public class HangmanGame {
-    private String secretWord;
-    private Set<Character> usedLetters = new HashSet<>();
+    private final String secretWord;
+    private final Set<Character> usedLetters = new HashSet<>();
     private int mistakes = 0;
-    private int maxMistakes = 6;
+    private final int maxMistakes = 6;
     private GameState state = GameState.IN_PROGRESS;
 
     public HangmanGame(String secretWord) {
@@ -61,17 +61,6 @@ public class HangmanGame {
         return GuessResult.INCORRECT;
     }
 
-    private boolean isWordGuessed() {
-        for (char letter : secretWord.toCharArray()) {
-            if (!usedLetters.contains(letter)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
     public GuessResult guessWord(String word) {
         if (state == GameState.WON) {
             return GuessResult.WON;
@@ -96,6 +85,16 @@ public class HangmanGame {
         return GuessResult.INCORRECT;
     }
 
+    private boolean isWordGuessed() {
+        for (char letter : secretWord.toCharArray()) {
+            if (!usedLetters.contains(letter)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public String getMaskedWord() {
         StringBuilder result = new StringBuilder();
 
@@ -114,6 +113,10 @@ public class HangmanGame {
         }
 
         return result.toString();
+    }
+
+    public String getSecretWord() {
+        return secretWord;
     }
 
     public int getMistakes(){

@@ -6,7 +6,8 @@ public class Main {
         String word = repository.getRandomWord();
 
         HangmanGame game = new HangmanGame(word);
-        Console console = new Console(game);
+        Dialogue dialogue = new Dialogue(game);
+        Console console = new Console(dialogue);
 
         console.startGame();
     }
