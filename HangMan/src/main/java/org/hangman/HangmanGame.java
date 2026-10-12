@@ -20,7 +20,7 @@ public class HangmanGame {
     }
 
     public GuessResult guessLetter(char letter){
-        // Если игра уже закончена, новый ход не обрабатываем
+        // Если игра уже закончена, новый ход не обрабатывается
         if (state == GameState.WON) {
             return GuessResult.WON;
         }
@@ -29,15 +29,15 @@ public class HangmanGame {
             return GuessResult.LOST;
         }
 
-        // Проверяем, не использовал ли игрок эту букву раньше
+        // Проверка, не использовал ли игрок эту букву раньше
         if (usedLetters.contains(letter)) {
             return GuessResult.ALREADY_USED;
         }
 
-        // Запоминаем новую букву
+        // Запоминает новую букву
         usedLetters.add(letter);
 
-        // Проверяем, есть ли буква в загаданном слове
+        // Проверка, есть ли буква в загаданном слове
         if (secretWord.indexOf(letter) >= 0) {
 
             // Если после этой буквы всё слово открыто — победа
