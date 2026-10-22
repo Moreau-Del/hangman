@@ -58,11 +58,6 @@ public class Dialogue {
         throw new IllegalStateException("Неизвестное состояние диалога");
     }
 
-    //public boolean isActive() {
-    //    return game.getState() == GameState.IN_PROGRESS;
-    //}
-
-
     private UserInput processInput(String input) {
         input = normalizeInput(input);
         InputType type = validateInput(input);
