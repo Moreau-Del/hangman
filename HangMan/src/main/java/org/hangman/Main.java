@@ -2,13 +2,15 @@ package org.hangman;
 
 public class Main {
     public static void main(String[] args) {
+
         WordRepository repository = new WordRepository();
-        String word = repository.getRandomWord();
+        GameFactory gameFactory = new GameFactory(repository);
+        CommandParser commandParser = new CommandParser();
 
-        HangmanGame game = new HangmanGame(word);
-        Dialogue dialogue = new Dialogue(game);
-        Console console = new Console(dialogue);
+        DialogueManager manager =
+                new DialogueManager(gameFactory, commandParser);
 
-        console.startGame();
+        Console console = new Console(manager);
+        console.start();
     }
 }

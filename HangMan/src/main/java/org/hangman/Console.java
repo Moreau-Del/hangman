@@ -4,22 +4,23 @@ import java.util.Scanner;
 
 public class Console {
     private Scanner scanner;
-    private Dialogue dialogue;
+    private DialogueManager dialogueManager;
 
-    public Console(Dialogue dialogue) {
-        this.dialogue = dialogue;
+    public Console(DialogueManager dialogueManager) {
+        this.dialogueManager = dialogueManager;
         this.scanner = new Scanner(System.in);
     }
 
     private String readInput() {
-
         return scanner.nextLine();
     }
 
-    public void startGame() {
+    public void start() {
+        Dialogue dialogue = dialogueManager.getDialogue("console");
+
         System.out.println(dialogue.start());
 
-        while (dialogue.isActive()) {
+        while (true) {
             String input = readInput();
             String response = dialogue.handleMessage(input);
             System.out.println(response);
