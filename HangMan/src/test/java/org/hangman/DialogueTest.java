@@ -9,16 +9,17 @@ public class DialogueTest {
     // старт диалога
     @Test
     void startShowsInitialState() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
 
         String response = dialogue.start();
 
         assertTrue(response.contains("Добро пожаловать"));
-        assertTrue(response.contains("Слово: _ _ _"));
-        assertTrue(response.contains("Ошибки: 0/6"));
-        assertTrue(response.contains("Введите букву или слово"));
-        assertTrue(dialogue.isActive());
+        assertTrue(response.contains("\\new"));
+        assertTrue(response.contains("\\help"));
+        assertEquals(DialogueState.CONVERSATION, dialogue.getState());
     }
 
     //––––––––––––––––––––––––
@@ -28,89 +29,104 @@ public class DialogueTest {
     // верная буква
     @Test
     void correctLetterIsProcessed() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         String response = dialogue.handleMessage("к");
 
         assertTrue(response.contains("Правильная буква!"));
         assertTrue(response.contains("Слово: к _ _"));
         assertTrue(response.contains("Ошибки: 0/6"));
-        assertTrue(dialogue.isActive());
     }
 
     // неверная буква
     @Test
     void incorrectLetterIsProcessed() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         String response = dialogue.handleMessage("а");
 
         assertTrue(response.contains("Неверная буква."));
         assertTrue(response.contains("Ошибки: 1/6"));
-        assertTrue(dialogue.isActive());
     }
 
-    // правильное слово
+    // правильное слово завершает игру (состояние game_over)
     @Test
-    void correctWordFinishesDialogue() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+    void correctWordFinishesGame() {
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         String response = dialogue.handleMessage("кот");
 
         assertTrue(response.contains("Поздравляем! Вы победили!"));
-        assertFalse(dialogue.isActive());
+        assertEquals(DialogueState.GAME_OVER, dialogue.getState());
     }
 
     // неправильное слово
     @Test
     void incorrectWordDoesNotFinishDialogue() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         String response = dialogue.handleMessage("дом");
 
         assertTrue(response.contains("Неверное слово."));
         assertTrue(response.contains("Ошибки: 1/6"));
-        assertTrue(dialogue.isActive());
     }
 
     // буква использовалась
     @Test
     void repeatedLetterDoesNotFinishDialogue() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         dialogue.handleMessage("к");
         String response = dialogue.handleMessage("к");
 
-        assertTrue(dialogue.isActive());
-        assertEquals(GameState.IN_PROGRESS, game.getState());
-        assertEquals(0, game.getMistakes());
         assertTrue(response.contains("Эта буква уже использовалась."));
+        assertTrue(response.contains("Ошибки: 0/6"));
     }
 
     // некорректный ввод
     @Test
     void invalidInputDoesNotChangeGameState() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         String response = dialogue.handleMessage("123");
 
         assertTrue(response.contains("Некорректный ввод."));
         assertTrue(response.contains("Слово: _ _ _"));
         assertTrue(response.contains("Ошибки: 0/6"));
-        assertTrue(dialogue.isActive());
     }
 
-    // лимит ошибок
+    // шестая ошибка завершает игру и переводит Dialogue в GAME_OVER
     @Test
     void sixthMistakeEndsGameWithLoss() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         dialogue.handleMessage("а");
         dialogue.handleMessage("б");
@@ -119,53 +135,60 @@ public class DialogueTest {
         dialogue.handleMessage("д");
         String response = dialogue.handleMessage("е");
 
-        assertEquals(GameState.LOST, game.getState());
-        assertFalse(dialogue.isActive());
-        assertEquals(6, game.getMistakes());
         assertTrue(response.contains("Вы проиграли."));
+        assertEquals(DialogueState.GAME_OVER, dialogue.getState());
     }
 
-    // победа завершает диалог
+    // после победы диалог продолжает принимать команды
     @Test
-    void winningEndsDialogue() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+    void dialogueContinuesAfterWin() {
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
 
-        dialogue.handleMessage("к");
-        dialogue.handleMessage("о");
-        String response = dialogue.handleMessage("т");
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
-        assertEquals(GameState.WON, game.getState());
-        assertFalse(dialogue.isActive());
-        assertTrue(response.contains("Поздравляем! Вы победили!"));
+        dialogue.handleMessage("кот");
+
+        String response = dialogue.handleMessage("\\help");
+
+        assertEquals(DialogueState.GAME_OVER, dialogue.getState());
+        assertTrue(response.contains("Доступные команды"));
     }
 
-    // поражение завершает диалог
+    // после поражения диалог продолжает принимать команды
     @Test
     void messageAfterLossDoesNotContinueGame() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         dialogue.handleMessage("а");
         dialogue.handleMessage("б");
         dialogue.handleMessage("в");
         dialogue.handleMessage("г");
         dialogue.handleMessage("д");
-        dialogue.handleMessage("е");
+        String lossResponse = dialogue.handleMessage("е");
 
-        String response = dialogue.handleMessage("к");
+        assertTrue(lossResponse.contains("Вы проиграли."));
+        assertEquals(DialogueState.GAME_OVER, dialogue.getState());
 
-        assertEquals(GameState.LOST, game.getState());
-        assertFalse(dialogue.isActive());
-        assertEquals(6, game.getMistakes());
-        assertTrue(response.contains("Вы проиграли."));
+        String response = dialogue.handleMessage("\\help");
+
+        assertTrue(response.contains("Доступные команды"));
+        assertEquals(DialogueState.GAME_OVER, dialogue.getState());
     }
 
     // вывод после поражения
     @Test
     void secretWordIsShownAfterLoss() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         dialogue.handleMessage("а");
         dialogue.handleMessage("б");
@@ -174,21 +197,62 @@ public class DialogueTest {
         dialogue.handleMessage("д");
         String response = dialogue.handleMessage("е");
 
-        assertEquals(GameState.LOST, game.getState());
         assertTrue(response.contains("Загаданное слово: кот"));
     }
 
     // работа с регистром
     @Test
     void uppercaseLetterIsNormalized() {
-        HangmanGame game = new HangmanGame("кот");
-        Dialogue dialogue = new Dialogue(game);
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
 
         String response = dialogue.handleMessage("К");
 
-        assertEquals(GameState.IN_PROGRESS, game.getState());
-        assertEquals(0, game.getMistakes());
         assertTrue(response.contains("Правильная буква!"));
         assertTrue(response.contains("к _ _"));
+    }
+
+    // справка появляется, состояние не меняется
+    @Test
+    void helpCommandShowsInstructions() {
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+
+        String response = dialogue.handleMessage("\\help");
+
+        assertTrue(response.contains("Доступные команды"));
+        assertTrue(response.contains("\\help"));
+        assertEquals(DialogueState.CONVERSATION, dialogue.getState());
+    }
+
+    // можно продолжать играть
+    @Test
+    void gameContinuesAfterHelp() {
+        GameFactory gameFactory = createTestGameFactory();
+        CommandParser commandParser = new CommandParser();
+
+        Dialogue dialogue = new Dialogue(gameFactory, commandParser);
+        dialogue.handleMessage("\\new");
+
+        dialogue.handleMessage("\\help");
+        String response = dialogue.handleMessage("к");
+
+        assertTrue(response.contains("Правильная буква!"));
+    }
+
+
+
+    private GameFactory createTestGameFactory() {
+        return new GameFactory(new WordRepository()) {
+            @Override
+            public HangmanGame createGame() {
+                return new HangmanGame("кот");
+            }
+        };
     }
 }
